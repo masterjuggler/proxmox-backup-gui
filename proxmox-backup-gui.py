@@ -56,35 +56,22 @@ class BackupSource:
 class BackupWorker(QThread):
     progress = pyqtSignal(str)
     finished = pyqtSignal(bool, str)
-    command_ready = pyqtSignal(list)  # New signal for the command
+    command_ready = pyqtSignal(list)
 
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
-
-    def get_backup_command(self) -> list:
-        config = self.parent.get_current_config()
-        cmd = ['proxmox-backup-client', 'backup']
-        
-        # Add backup sources and their exclusions
-        for source in config['backup_sources']:
-            dir_name = os.path.basename(source.path.rstrip('/'))
-            cmd.append(f"{dir_name}.{source.archive_type}:{source.path}")
-            # Add exclusions for this source
-            for exclusion in source.exclusions:
-                cmd.append(f"--exclude={exclusion}")
-
-        cmd.extend([f"--repository", config['repository']])
-        return cmd
 
     def run(self):
         try:
             config = self.parent.get_current_config()
             env = dict(os.environ)
             env['PBS_PASSWORD'] = config['api_key']
+            if config.get('fingerprint'):  # Only set fingerprint if it exists
+                env['PBS_FINGERPRINT'] = config['fingerprint']
             
             cmd = self.get_backup_command()
-            self.command_ready.emit(cmd)  # Emit the command
+            self.command_ready.emit(cmd)
 
             self.progress.emit(f"Running command: {' '.join(cmd)}")
 
@@ -115,10 +102,11 @@ class BackupWorker(QThread):
             self.finished.emit(False, f"Error: {str(e)}")
 
 class BackupProfile:
-    def __init__(self, name: str, repository: str = '', api_key: str = '', backup_sources: List[BackupSource] = None):
+    def __init__(self, name: str, repository: str = '', api_key: str = '', fingerprint: str = '', backup_sources: List[BackupSource] = None):
         self.name = name
         self.repository = repository
         self.api_key = api_key
+        self.fingerprint = fingerprint
         self.backup_sources = backup_sources or []
 
     def to_dict(self) -> dict:
@@ -126,6 +114,7 @@ class BackupProfile:
             'name': self.name,
             'repository': self.repository,
             'api_key': self.api_key,
+            'fingerprint': self.fingerprint,
             'backup_sources': [source.to_dict() for source in self.backup_sources]
         }
 
@@ -136,6 +125,7 @@ class BackupProfile:
             data['name'],
             data['repository'],
             data['api_key'],
+            data.get('fingerprint', ''),  # Make fingerprint optional for backward compatibility
             sources
         )
 
@@ -448,6 +438,7 @@ class ProxmoxBackupGUI(QMainWindow):
         return {
             'repository': profile.repository,
             'api_key': profile.api_key,
+            'fingerprint': profile.fingerprint,
             'backup_sources': profile.backup_sources
         }
 
@@ -468,13 +459,21 @@ class ProxmoxBackupGUI(QMainWindow):
         api_layout = QHBoxLayout()
         api_label = QLabel("API Key:")
         self.api_edit = QLineEdit(config.get('api_key', ''))
-        self.api_edit.setEchoMode(QLineEdit.EchoMode.Password)  # Hide API key
+        self.api_edit.setEchoMode(QLineEdit.EchoMode.Password)
         show_api_button = QPushButton("Show/Hide")
         show_api_button.clicked.connect(self.toggle_api_visibility)
         api_layout.addWidget(api_label)
         api_layout.addWidget(self.api_edit)
         api_layout.addWidget(show_api_button)
         layout.addLayout(api_layout)
+
+        # Fingerprint settings
+        fingerprint_layout = QHBoxLayout()
+        fingerprint_label = QLabel("Server Fingerprint:")
+        self.fingerprint_edit = QLineEdit(config.get('fingerprint', ''))
+        fingerprint_layout.addWidget(fingerprint_label)
+        fingerprint_layout.addWidget(self.fingerprint_edit)
+        layout.addLayout(fingerprint_layout)
 
         # Save button
         save_button = QPushButton("Save Settings")
@@ -503,6 +502,8 @@ class ProxmoxBackupGUI(QMainWindow):
         try:
             env = dict(os.environ)
             env['PBS_PASSWORD'] = self.api_edit.text()
+            if self.fingerprint_edit.text():
+                env['PBS_FINGERPRINT'] = self.fingerprint_edit.text()
             
             cmd = [
                 'proxmox-backup-client',
@@ -582,6 +583,7 @@ class ProxmoxBackupGUI(QMainWindow):
                 profile = self.profiles[self.current_profile_name]
                 profile.repository = self.repo_edit.text()
                 profile.api_key = self.api_edit.text()
+                profile.fingerprint = self.fingerprint_edit.text()
 
             # Prepare config data
             config_data = {
@@ -636,6 +638,7 @@ class ProxmoxBackupGUI(QMainWindow):
         # Update settings
         self.repo_edit.setText(profile.repository)
         self.api_edit.setText(profile.api_key)
+        self.fingerprint_edit.setText(profile.fingerprint)
         
         # Update sources list
         self.sources_list.clear()
