@@ -145,6 +145,10 @@ class ProxmoxBackupGUI(QMainWindow):
         self.setWindowTitle("Proxmox Backup GUI")
         self.setGeometry(100, 100, 800, 600)
         
+        # Create config path
+        self.config_file = Path.home() / '.config' / 'proxmox-backup-gui' / 'config.yaml'
+        self.config_file.parent.mkdir(parents=True, exist_ok=True)
+
         # Create and set icon
         icon_path = self.create_default_icon()
         self.icon = QIcon(icon_path)
@@ -156,10 +160,8 @@ class ProxmoxBackupGUI(QMainWindow):
         # Initialize profiles
         self.profiles: Dict[str, BackupProfile] = {}
         self.current_profile_name = None
-        
-        # Load configuration
-        self.config_file = Path.home() / '.config' / 'proxmox-backup-gui' / 'config.yaml'
-        self.config_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Load config
         self.load_config()
 
         # Setup UI
@@ -823,7 +825,7 @@ class ProxmoxBackupGUI(QMainWindow):
             else:
                 error = result.stderr.strip()
                 # logger.error(f"Failed to fetch archives: {error}")
-                QMessageBox.warning(self, "Error", f"Failed to fetch archives: {error}")
+                # QMessageBox.warning(self, "Error", f"Failed to fetch archives: {error}")
         except Exception as e:
             # logger.error(f"Unexpected error when fetching archives: {str(e)}")
             QMessageBox.warning(self, "Error", f"Unexpected error when fetching archives: {str(e)}")
