@@ -147,7 +147,7 @@ class BackupProfile:
 class ProxmoxBackupGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Proxmox Backup GUI")
+        self.version = "1.0.0"  # Add version tracking
         self.setGeometry(100, 100, 800, 600)
         
         # Create config path
@@ -499,6 +499,14 @@ class ProxmoxBackupGUI(QMainWindow):
         test_button = QPushButton("Test Connection")
         test_button.clicked.connect(self.test_connection)
         layout.addWidget(test_button)
+
+        # Add version display
+        version_layout = QHBoxLayout()
+        version_layout.addStretch()  # Push version to the right
+        version_label = QLabel(f"Version: {self.version}")
+        version_label.setStyleSheet("color: gray;")  # Make it subtle
+        version_layout.addWidget(version_label)
+        layout.addLayout(version_layout)
 
         layout.addStretch()
         tabs.addTab(settings_tab, "Settings")
