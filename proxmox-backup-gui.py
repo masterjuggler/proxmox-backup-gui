@@ -19,19 +19,18 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QIcon, QClipboard
 
 
-# Set up logging
-log_dir = Path.home() / '.config' / 'proxmox-backup-gui' / 'logs'
-log_dir.mkdir(parents=True, exist_ok=True)
-log_file = log_dir / f'proxmox-backup-gui_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
+# log_dir = Path.home() / '.config' / 'proxmox-backup-gui' / 'logs'
+# log_dir.mkdir(parents=True, exist_ok=True)
+# log_file = log_dir / f'proxmox-backup-gui_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.log'
 
-logging.basicConfig(
-    filename=log_file,
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+# logging.basicConfig(
+#     filename=log_file,
+#     level=logging.INFO,
+#     format='%(asctime)s %(levelname)s: %(message)s',
+#     datefmt='%Y-%m-%d %H:%M:%S'
+# )
 
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 class BackupSource:
     def __init__(self, path: str, archive_type: str = 'pxar', exclusions: List[str] = None):
@@ -823,10 +822,10 @@ class ProxmoxBackupGUI(QMainWindow):
                     
             else:
                 error = result.stderr.strip()
-                logger.error(f"Failed to fetch archives: {error}")
+                # logger.error(f"Failed to fetch archives: {error}")
                 QMessageBox.warning(self, "Error", f"Failed to fetch archives: {error}")
         except Exception as e:
-            logger.error(f"Unexpected error when fetching archives: {str(e)}")
+            # logger.error(f"Unexpected error when fetching archives: {str(e)}")
             QMessageBox.warning(self, "Error", f"Unexpected error when fetching archives: {str(e)}")
 
     def restore_archive(self):
@@ -839,7 +838,7 @@ class ProxmoxBackupGUI(QMainWindow):
         row = selected_items[0].row()
         backup_id = self.archives_table.item(row, 0).text()
         
-        logger.info(f"Starting restore for snapshot: {backup_id}")
+        # logger.info(f"Starting restore for snapshot: {backup_id}")
         
         try:
             config = self.get_current_config()
@@ -861,12 +860,12 @@ class ProxmoxBackupGUI(QMainWindow):
                 '--output-format', 'json'
             ]
             
-            logger.info(f"Running command: {' '.join(cmd)}")
+            # logger.info(f"Running command: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, text=True, env=env)
             
             if result.returncode != 0:
                 error = result.stderr.strip()
-                logger.error(f"Failed to list snapshot contents: {error}")
+                # logger.error(f"Failed to list snapshot contents: {error}")
                 QMessageBox.warning(self, "Error", f"Failed to list snapshot contents: {error}")
                 return
 
@@ -895,7 +894,7 @@ class ProxmoxBackupGUI(QMainWindow):
                     else:
                         return
             except json.JSONDecodeError:
-                logger.error("Failed to parse snapshot data")
+                # logger.error("Failed to parse snapshot data")
                 QMessageBox.warning(self, "Error", "Failed to parse snapshot data")
                 return
             
@@ -909,7 +908,7 @@ class ProxmoxBackupGUI(QMainWindow):
                 f"--repository", config['repository']
             ]
             
-            logger.info(f"Running restore command: {' '.join(cmd)}")
+            # logger.info(f"Running restore command: {' '.join(cmd)}")
             
             # Show progress dialog
             progress = QProgressDialog("Restoring archive...", "Cancel", 0, 0, self)
@@ -926,29 +925,29 @@ class ProxmoxBackupGUI(QMainWindow):
             
             while True:
                 output = process.stdout.readline()
-                if output:
-                    logger.info(f"Restore output: {output.strip()}")
+                # if output:
+                    # logger.info(f"Restore output: {output.strip()}")
                 if process.poll() is not None:
                     break
                 QApplication.processEvents()
                 if progress.wasCanceled():
                     process.terminate()
                     QMessageBox.warning(self, "Cancelled", "Restore operation cancelled")
-                    logger.info("Restore operation cancelled by user")
+                    # logger.info("Restore operation cancelled by user")
                     return
             
             progress.close()
             
             if process.returncode == 0:
-                logger.info("Restore completed successfully")
+                # logger.info("Restore completed successfully")
                 QMessageBox.information(self, "Success", "Archive restored successfully")
             else:
                 error = process.stderr.read()
-                logger.error(f"Restore failed: {error}")
+                # logger.error(f"Restore failed: {error}")
                 QMessageBox.warning(self, "Error", f"Failed to restore archive: {error}")
                 
         except Exception as e:
-            logger.error(f"Restore failed with unexpected error: {str(e)}")
+            # logger.error(f"Restore failed with unexpected error: {str(e)}")
             QMessageBox.warning(self, "Error", f"Failed to restore archive: {str(e)}")
 
     def mount_archive(self):
@@ -965,7 +964,7 @@ class ProxmoxBackupGUI(QMainWindow):
         row = selected_items[0].row()
         backup_id = self.archives_table.item(row, 0).text()
         
-        logger.info(f"Starting mount for snapshot: {backup_id}")
+        # logger.info(f"Starting mount for snapshot: {backup_id}")
         
         try:
             config = self.get_current_config()
@@ -987,12 +986,12 @@ class ProxmoxBackupGUI(QMainWindow):
                 '--output-format', 'json'
             ]
             
-            logger.info(f"Running command: {' '.join(cmd)}")
+            # logger.info(f"Running command: {' '.join(cmd)}")
             result = subprocess.run(cmd, capture_output=True, text=True, env=env)
             
             if result.returncode != 0:
                 error = result.stderr.strip()
-                logger.error(f"Failed to list snapshot contents: {error}")
+                # logger.error(f"Failed to list snapshot contents: {error}")
                 QMessageBox.warning(self, "Error", f"Failed to list snapshot contents: {error}")
                 return
 
@@ -1021,7 +1020,7 @@ class ProxmoxBackupGUI(QMainWindow):
                     else:
                         return
             except json.JSONDecodeError:
-                logger.error("Failed to parse snapshot data")
+                # logger.error("Failed to parse snapshot data")
                 QMessageBox.warning(self, "Error", "Failed to parse snapshot data")
                 return
             
@@ -1035,7 +1034,7 @@ class ProxmoxBackupGUI(QMainWindow):
                 f"--repository", config['repository']
             ]
             
-            logger.info(f"Running mount command: {' '.join(cmd)}")
+            # logger.info(f"Running mount command: {' '.join(cmd)}")
             
             process = subprocess.Popen(
                 cmd,
@@ -1049,7 +1048,7 @@ class ProxmoxBackupGUI(QMainWindow):
             
             if process.returncode == 0:
                 success_msg = f"Archive mounted successfully at {mount_path}"
-                logger.info(success_msg)
+                # logger.info(success_msg)
                 QMessageBox.information(
                     self, 
                     "Success", 
@@ -1060,11 +1059,11 @@ class ProxmoxBackupGUI(QMainWindow):
                 # Update mount status in UI
                 self.update_mount_status()
             else:
-                logger.error(f"Mount failed: {error}")
+                # logger.error(f"Mount failed: {error}")
                 QMessageBox.warning(self, "Error", f"Failed to mount archive: {error}")
                 
         except Exception as e:
-            logger.error(f"Mount failed with unexpected error: {str(e)}")
+            # logger.error(f"Mount failed with unexpected error: {str(e)}")
             QMessageBox.warning(self, "Error", f"Failed to mount archive: {str(e)}")
 
     def unmount_current(self):
@@ -1123,20 +1122,20 @@ class ProxmoxBackupGUI(QMainWindow):
                     f"--repository", config['repository']
                 ]
                 
-                logger.info(f"Running delete command: {' '.join(cmd)}")
+                # logger.info(f"Running delete command: {' '.join(cmd)}")
                 result = subprocess.run(cmd, capture_output=True, text=True, env=env)
                 
                 if result.returncode == 0:
-                    logger.info("Archive deleted successfully")
+                    # logger.info("Archive deleted successfully")
                     QMessageBox.information(self, "Success", "Archive deleted successfully")
                     self.refresh_archives()  # Refresh the archives list
                 else:
                     error = result.stderr.strip()
-                    logger.error(f"Failed to delete archive: {error}")
+                    # logger.error(f"Failed to delete archive: {error}")
                     QMessageBox.warning(self, "Error", f"Failed to delete archive: {error}")
                     
             except Exception as e:
-                logger.error(f"Delete failed with unexpected error: {str(e)}")
+                # logger.error(f"Delete failed with unexpected error: {str(e)}")
                 QMessageBox.warning(self, "Error", f"Failed to delete archive: {str(e)}")
 
     def format_size(self, size_bytes):
