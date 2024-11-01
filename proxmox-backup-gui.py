@@ -62,6 +62,21 @@ class BackupWorker(QThread):
         super().__init__(parent)
         self.parent = parent
 
+    def get_backup_command(self) -> list:
+        config = self.parent.get_current_config()
+        cmd = ['proxmox-backup-client', 'backup']
+        
+        # Add backup sources and their exclusions
+        for source in config['backup_sources']:
+            dir_name = os.path.basename(source.path.rstrip('/'))
+            cmd.append(f"{dir_name}.{source.archive_type}:{source.path}")
+            # Add exclusions for this source
+            for exclusion in source.exclusions:
+                cmd.append(f"--exclude={exclusion}")
+
+        cmd.extend([f"--repository", config['repository']])
+        return cmd
+
     def run(self):
         try:
             config = self.parent.get_current_config()
